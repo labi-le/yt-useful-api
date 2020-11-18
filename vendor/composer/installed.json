@@ -1,0 +1,53 @@
+{
+    "packages": [
+        {
+            "name": "athlon1600/youtube-downloader",
+            "version": "v2.1.1",
+            "version_normalized": "2.1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Athlon1600/youtube-downloader.git",
+                "reference": "a595645dec6fc2975caaf8f37dafa3ca303ea2c4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Athlon1600/youtube-downloader/zipball/a595645dec6fc2975caaf8f37dafa3ca303ea2c4",
+                "reference": "a595645dec6fc2975caaf8f37dafa3ca303ea2c4",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "ext-json": "*",
+                "php": "^5.6 || ^7.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^5.7|6.2|^7.0"
+            },
+            "time": "2020-10-17T13:37:50+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "YouTube\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "PHP powered alternative for youtube-dl",
+            "keywords": [
+                "download youtube",
+                "download youtube videos",
+                "youtube downloader"
+            ],
+            "support": {
+                "issues": "https://github.com/Athlon1600/youtube-downloader/issues",
+                "source": "https://github.com/Athlon1600/youtube-downloader/tree/v2.1.1"
+            },
+            "install-path": "../athlon1600/youtube-downloader"
+        }
+    ],
+    "dev": true,
+    "dev-package-names": []
+}
