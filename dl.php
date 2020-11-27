@@ -132,7 +132,7 @@ class Dll
         return round($size, $precision).$units[$i];
     }
 
-    protected function checkGetRequest(string $event, array $data)
+    protected function checkRequest(string $event, array $data)
     {
         switch ($event) {
             case 'download':
@@ -155,7 +155,7 @@ class Dll
     protected function direct_link(array &$data)
     {
         $id = $data['id'];
-        $quality = $data['quality'];
+        $quality = $data['quality'] ?? 'mp4_720';
 
         if (!isset($this->quality[$quality])) {
             return $this->error_response(4);
@@ -217,7 +217,7 @@ class Dll
 
     public function run(string $event, array $data)
     {
-        if ($this->checkGetRequest($event, $data)) {
+        if ($this->checkRequest($event, $data)) {
             if (method_exists($this, $event)) {
                 echo $this->$event($data);
             } else echo $this->error_response(8);
