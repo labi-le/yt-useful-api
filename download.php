@@ -9,4 +9,4 @@ $dl = new Dll();
  * return json
  */
 
-$var = $dl->run('download', $_GET);
+$dl->run('download', $_GET);

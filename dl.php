@@ -7,8 +7,8 @@ ini_set('display_errors', 1);
 require('vendor/autoload.php');
 require('vendor/simplevk/autoload.php');
 
-use YouTube\YouTubeDownloader;
 use DigitalStars\SimpleVK\SimpleVK as vk;
+use YouTube\YouTubeDownloader;
 
 
 class Dll
@@ -52,6 +52,64 @@ class Dll
         $this->yt = new YouTubeDownloader();
     }
 
+    /**
+     * Обработчик событий
+     * @param string $event
+     * @param array $data
+     */
+    public function run(string $event, array $data)
+    {
+        if ($this->checkRequest($event, $data)) {
+            if (method_exists($this, $event)) {
+                echo $this->$event($data);
+            } else echo $this->error_response(8);
+        } else echo $this->error_response(6);
+    }
+
+    /**
+     * События
+     * @param string $event
+     * @param array $data
+     * @return bool
+     */
+    private function checkRequest(string $event, array $data)
+    {
+        switch ($event) {
+            case 'direct_link':
+            case 'download':
+                return boolval(isset($data['id']));
+                break;
+
+            case 'upload':
+                return boolval(isset($data['author'], $data['title'], $data['description'], $data['access_token'], $data['album_id'], $data['group_id'], $data['filename']));
+                break;
+
+            case 'delete':
+                return boolval(isset($data['filename']));
+        }
+    }
+
+    protected function getExt(string $format): string
+    {
+        return explode(',', $format)[0];
+    }
+
+    /**
+     * Загрузить видео
+     * @param array $data
+     * @param string $ext
+     * @return false|string
+     */
+    protected function download(array &$data, $ext = 'mp4')
+    {
+        $url = $data['id'];
+
+        $result = $this->downloader($this->parse($url), $ext);
+        if ($result) {
+            return $this->success_response(['filename' => $result, 'size' => $this->human_filesize(filesize($this->dir_for_video . $result))]);
+        } else return $this->error_response(2);
+    }
+
     protected function downloader(string $direct_url, string $ext)
     {
         $filename = uniqid() . '.' . $ext;
@@ -64,39 +122,7 @@ class Dll
         } else return false;
     }
 
-    protected function getExt(string &$format)
-    {
-        return explode(',', $format)[0];
-    }
-
-    protected function error_response(int $code)
-    {
-        return $this->response_generator([
-            'status' => false,
-            'error_code' => $code,
-            'error_msg' => $this->error_code[$code]
-        ]);
-    }
-
-    protected function success_response($array)
-    {
-        return $this->response_generator(array_merge([
-            'status' => true,
-        ], $array));
-    }
-
-    protected function response_generator(array $array)
-    {
-        return json_encode($array);
-    }
-
-    protected function is_json($json)
-    {
-        json_decode($json);
-        return (json_last_error() == JSON_ERROR_NONE);
-    }
-
-    protected function parse(string $url, string $format = 'mp4, video, 720p, audio')
+    private function parse(string $url, string $format = 'mp4, video, 720p, audio')
     {
         $links = $this->yt->getDownloadLinks($url);
 
@@ -108,51 +134,57 @@ class Dll
             }
         }
         return false;
-        // var_dump($links);
     }
 
-    protected function download(array &$data, $ext = 'mp4')
+    private function error_response(int $code)
     {
-        $url = $data['id'];
-
-        $result = $this->downloader($this->parse($url), $ext);
-        if ($result) {
-            return $this->success_response(['filename' => $result, 'size' => $this->human_filesize(filesize($this->dir_for_video . $result))]);
-        } else return $this->error_response(2);
+        return $this->response_generator([
+            'status' => false,
+            'error_code' => $code,
+            'error_msg' => $this->error_code[$code]
+        ]);
     }
 
-    protected function human_filesize($size, $precision = 2) {
-        static $units = array('B','kB','MB','GB','TB','PB','EB','ZB','YB');
+    private function response_generator(array $array)
+    {
+        return json_encode($array);
+    }
+
+    private function success_response($array)
+    {
+        return $this->response_generator(array_merge([
+            'status' => true,
+        ], $array));
+    }
+
+    private function human_filesize($size, $precision = 2)
+    {
+        static $units = array('B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
         $step = 1024;
         $i = 0;
         while (($size / $step) > 0.9) {
             $size = $size / $step;
             $i++;
         }
-        return round($size, $precision).$units[$i];
+        return round($size, $precision) . $units[$i];
     }
 
-    protected function checkRequest(string $event, array $data)
+    protected function delete(array &$data)
     {
-        switch ($event) {
-            case 'download':
-                return boolval(isset($data['id']));
-                break;
-
-            case 'upload':
-                return boolval(isset($data['author'], $data['title'], $data['description'], $data['access_token'], $data['album_id'], $data['group_id'], $data['filename']));
-                break;
-
-            case 'direct_link':
-                return boolval(isset($data['id']));
-                break;
-
-            case 'delete':
-                return boolval(isset($data['filename']));
-        }
+        $filename = $data['filename'];
+        if (file_exists($filename)) {
+            unlink($this->dir_for_video . $filename);
+            return $this->success_response(['status' => true]);
+        } else return $this->success_response(['status' => true]);
     }
 
-    protected function direct_link(array &$data)
+    private function is_json($json)
+    {
+        json_decode($json);
+        return (json_last_error() == JSON_ERROR_NONE);
+    }
+
+    private function direct_link(array &$data)
     {
         $id = $data['id'];
         $quality = $data['quality'] ?? 'mp4_720';
@@ -165,7 +197,8 @@ class Dll
             return $response;
         }
     }
-    protected function upload(array &$data)
+
+    private function upload(array &$data)
     {
         // var_dump($user);
         $video = [
@@ -181,7 +214,7 @@ class Dll
             $user = [
                 'access_token' => $data['access_token'],
                 'group_id' => $data['group_id'],
-                'album_id' =>  $data['album_id']
+                'album_id' => $data['album_id']
             ];
 
             $vk = vk::create($user['access_token'], 5.124);
@@ -204,24 +237,6 @@ class Dll
             }
             return $this->success_response(['attachment' => $load]);
         } else return $this->error_response(7);
-    }
-
-    protected function delete(array &$data)
-    {
-        $filename = $data['filename'];
-        if (file_exists($filename)) {
-            unlink($this->dir_for_video . $filename);
-            return $this->success_response(['status' => true]);
-        } else return $this->success_response(['status' => true]);
-    }
-
-    public function run(string $event, array $data)
-    {
-        if ($this->checkRequest($event, $data)) {
-            if (method_exists($this, $event)) {
-                echo $this->$event($data);
-            } else echo $this->error_response(8);
-        } else echo $this->error_response(6);
     }
 }
 
